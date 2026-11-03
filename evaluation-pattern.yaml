@@ -1,0 +1,162 @@
+# Conceptual model; these declarations do not execute checks or enforce policy.
+intent: >-
+  Guide software development and operation through explicit claims, appropriate
+  checks, and evidence-based decisions about what to accept or revise.
+
+# How we evaluate a claim, regardless of what is being evaluated.
+core:
+  loop:
+    - claim
+    - conditions_and_assumptions
+    - check
+    - evidence_with_limitations
+    - decision
+    - targeted_revision
+    - repeat
+
+  stages:
+    claim: State the property or outcome being evaluated and its acceptance criteria.
+    conditions_and_assumptions: >-
+      Identify the workload, environment, scope, and assumptions under which
+      the claim and its acceptance criteria apply.
+    check: >-
+      Select and perform an appropriate analysis, proof, test, or measurement.
+      Execution is required only when the selected method needs running software.
+    evidence_with_limitations: >-
+      Record results, provenance, applicable conditions, uncertainty, and gaps.
+      Missing or insufficient evidence leaves the claim unknown.
+    decision: >-
+      Decide whether to accept within the evidenced scope, revise, investigate,
+      gather more evidence, or escalate unresolved questions.
+    targeted_revision: >-
+      Revise the part implicated by the evidence. Validate changes to claims
+      and acceptance criteria separately from implementation repair.
+    repeat: >-
+      Re-evaluate affected claims after revision or changes to their supporting
+      conditions and assumptions. Acceptance need not trigger another iteration.
+
+  revision_targets:
+    - specification
+    - design
+    - implementation
+    - model
+    - assumptions
+
+  evaluation_rules:
+    - Every evaluation area, including future additions, uses the same core process.
+    - Areas group questions, activities, and checks by what is being evaluated.
+    - Areas are not mandatory sequential phases; work may move between them as needed.
+    - Checks may occur before implementation as well as during development and runtime.
+    - An unknown claim is not treated as satisfied.
+
+  evaluation_scope:
+    outcome: Identify the bounded user outcome or property being evaluated.
+    decision: State the next decision and the evidence it requires.
+    boundaries: Identify included behavior, relevant dependencies, and exclusions.
+    stopping_rules:
+      - >-
+        Stop specification refinement when scoped outcomes have checkable criteria
+        and unresolved questions are resolved, bounded, or assigned an investigation
+        sufficient to choose the next step.
+      - >-
+        End an evaluation when evidence supports the stated decision, including
+        rejection or further investigation; ending does not imply acceptance.
+      - >-
+        Record remaining uncertainty, its consequences, and reasons for proceeding
+        or deferring. Accepted uncertainty does not make an unknown claim satisfied
+        or waive a required outcome, invariant, or hard constraint.
+      - >-
+        Do not require exhaustive scenarios or complete knowledge of the system.
+        Revisit the scope when new evidence reveals a material gap.
+
+  traceability:
+    links:
+      - Connect user outcomes to concrete scenarios and claims.
+      - Connect claims to responsible components and dependency assumptions.
+      - Connect claims to checks, evidence, and decisions.
+    records:
+      - Preserve the source and rationale of each requirement.
+      - Distinguish confirmed business decisions from proposed assumptions.
+      - Explain which approved outcomes justify derived technical requirements.
+      - Record unresolved questions and their effect on the next decision.
+      - Keep requirement confirmation separate from evidence of satisfaction.
+      - >-
+        Keep expected outcomes in project specifications and actual results in
+        separate evidence records linked to specification, implementation,
+        check, and environment versions where relevant.
+
+  dependency_assumptions:
+    - Identify what a component requires and what its dependencies promise to provide.
+    - Record the conditions, supporting evidence, and gaps for those promises.
+    - >-
+      Evaluate interactions and end-to-end outcomes as well as individual
+      components; local checks alone do not establish workflow correctness.
+    - Link dependency assumptions to the claims affected if they change or fail.
+
+  repeat_triggers:
+    - New evidence contradicts a claim or exposes an important missing scenario.
+    - A relevant requirement, implementation, model, or dependency changes.
+    - Operating conditions change or a supporting assumption no longer holds.
+    - Supporting evidence becomes inapplicable or insufficient for a new decision.
+
+# What we evaluate; these areas organize checks rather than define separate loops.
+evaluation_areas:
+  specification:
+    purpose: Establish whether proposed requirements represent the intended outcomes.
+    discovery:
+      input: Human intent and domain context expressed in ordinary language.
+      activities:
+        - Identify affected users, desired outcomes, and a bounded workflow.
+        - Develop concrete normal, forbidden, and exceptional scenarios.
+        - Use domain knowledge, existing documentation, and incidents where available.
+        - Present meaningful business alternatives in everyday language.
+        - Confirm business choices with the appropriate decision maker.
+        - Derive observable acceptance criteria and justified technical obligations.
+      prompts:
+        - What happens before, during, and after the user action?
+        - What if data is missing, null, invalid, outdated, or contradictory?
+        - What if actions overlap, arrive late, or are repeated?
+        - What if a dependency fails or an operation is interrupted?
+        - Who may perform the action or access its data?
+        - How is an unfinished or incorrect outcome discovered and recovered?
+      limitation: >-
+        These prompts guide scoped discovery; they are not an exhaustive checklist
+        or evidence that all requirements have been found.
+    activities:
+      - Translate intent and domain context into explicit claims.
+      - Identify conditions, assumptions, invariants, and acceptance criteria.
+    checks:
+      - Review ambiguities, contradictions, missing rules, and unsupported assumptions.
+      - Validate required and forbidden scenarios against domain evidence.
+      - Check that criteria distinguish acceptable outcomes from failures.
+      - Check that inferred assumptions are not silently treated as confirmed decisions.
+      - Trace technical requirements to the outcomes and scenarios that justify them.
+
+  design:
+    purpose: Evaluate whether a proposed design can satisfy the specified claims.
+    activities:
+      - Model architecture, dependencies, resources, and expected workloads.
+      - Predict behavior and resource consumption under explicit conditions.
+    checks:
+      - Evaluate feasibility, compatibility, and resource budgets.
+      - Examine model assumptions and uncertainty in predictions.
+
+  implementation:
+    purpose: Establish whether the implementation satisfies the specified claims.
+    activities:
+      - Generate or modify code according to the specification and design.
+      - Execute the implementation when a check requires observed behavior.
+    checks:
+      - Apply static analysis or formal verification where appropriate.
+      - Test behavioral invariants, boundaries, concurrency, and failure recovery.
+      - Measure resource consumption under defined workloads when relevant.
+
+  runtime:
+    purpose: Evaluate continued satisfaction as operating conditions change.
+    activities:
+      - Observe actual behavior and collect measurements with operating context.
+      - Compare observations with specifications, predictions, and assumptions.
+    checks:
+      - Monitor behavioral invariants and operational constraints.
+      - Check whether assumptions and previously accepted evidence remain applicable.
+      - Investigate discrepancies between predicted and measured behavior.
