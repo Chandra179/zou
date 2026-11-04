@@ -74,6 +74,16 @@ core:
         evidenced, or until the decision maker revises or removes the requirement
         through the specification area.
       - >-
+        Distinguish a claim that is not yet checked from one that no available
+        check can decide. For an undecidable claim, decompose it into checkable
+        proxy claims, assess it with a human-assisted oracle and record the
+        reviewer evidence, or have the decision maker revise or relax it. An
+        undecidable required claim is never treated as satisfied.
+      - >-
+        Record how far a passing result reaches (exhaustive, bounded, sampled, or
+        human judgment) and the conditions it was obtained under, so that "passed"
+        is not read as proof beyond the evidenced scope.
+      - >-
         Do not require exhaustive scenarios or complete knowledge of the system.
         Revisit the scope when new evidence reveals a material gap.
 

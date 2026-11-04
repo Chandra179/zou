@@ -1,5 +1,7 @@
 # Ideas
 
+> **Current scope:** the implementation in this repository (the [`business-rules` skill](../.claude/skills/business-rules/SKILL.md) and [how-to](business-rules-howto.md)) covers behavioral business rules only. The constraint tuple `C = (P, M, W, T, E, U)` and the resource-prediction ideas below (storage, memory, latency, capacity) are deferred, not dropped.
+
 ## Measurement-driven development
 
 I think the idea should be designed as a closed-loop, measurement-driven development system.
@@ -126,7 +128,7 @@ Organize the research around two connected problems:
 
 Problem A gives the measurement framework. Problem B gives the autonomous development system.
 
-Together, they form a coherent technical direction rather than just another AI coding assistant.
+Together, they form a coherent technical direction. Each piece has prior art (see the [research review](research-review.md)), so novelty rests on whether the integration reduces incorrect acceptance at practical cost, which is still to be shown.
 
 ---
 

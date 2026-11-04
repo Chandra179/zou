@@ -4,6 +4,7 @@ rules:
   - id: DISC-1
     statement: WHEN a discount is applied, THE SYSTEM SHALL reject any discount above 15%.
     status: confirmed
+    required: true
     rationale: Margin policy.
     source:
       kind: stakeholder
@@ -31,10 +32,52 @@ rules:
       ref: tests/test_discount.py
       strength: sampled
     evidence:
-      result: verified
+      result: passed
       ref: ci run 123
       date: 2026-11-04
       limitations: three sampled inputs only
+      provenance:
+        code_version: abc1234
+        rule_revision: 2026-11-04
+        environment: ci, python 3.13
+        workload: unit inputs 10, 20, -5
+        tool: pytest
+
+  - id: UX-1
+    statement: Checkout feels trustworthy to first-time buyers.
+    status: confirmed
+    required: false
+    rationale: Important, but no available check can decide it. Kept optional until proxies exist.
+    source:
+      kind: stakeholder
+      ref: "founder, kickoff call"
+    decided_by: Dana (pricing owner)
+    decided_on: 2026-11-04
+    scenarios:
+      - kind: required
+        name: buyer completes first order
+        given: a new visitor
+        when: they buy once
+        then: they reach the confirmation page without support contact
+      - kind: forbidden
+        name: surprise charge
+        given: a new visitor
+        when: they reach payment
+        then: no cost appears that was not shown earlier
+    evidence:
+      result: unmeasurable
+      reason: Trust is subjective; no direct metric.
+      proxies:
+        - UX-2
+
+  - id: UX-2
+    statement: At least 90% of first-time buyers who start checkout reach the confirmation page.
+    status: proposed
+    required: false
+    rationale: Candidate proxy for UX-1; threshold is a guess.
+    source:
+      kind: inferred
+      ref: common conversion benchmark
 
   - id: DISC-2
     statement: Discounts are applied before tax.

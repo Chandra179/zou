@@ -12,10 +12,11 @@ Write every rule as a record that answers: who decided it, which concrete cases 
 | --- | --- |
 | `id`, `statement` | Stable name and the rule in plain language (EARS wording is optional). |
 | `status` | `confirmed`: a decision maker decided it. `proposed`: inferred, awaiting a decision. `open`: an unresolved question. |
+| `required` | `true` for an outcome, invariant, or hard constraint that blocks acceptance while unevidenced. Mandatory on confirmed rules. |
 | `source`, `decided_by`, `decided_on` | Where it came from and who decided it. Required for `confirmed`; the source cannot be `inferred`. |
 | `scenarios` | Concrete given / when / then cases, each `required`, `forbidden`, or `exceptional`. A confirmed rule needs at least one required and one forbidden scenario. |
 | `check` | `method` (test, assertion, review, proof, measurement, none), optional `ref`, and `strength` (exhaustive, bounded, sampled, human). |
-| `evidence` | `result` (verified, violated, unknown, out_of_scope), a `ref` to the result, `date`, and `limitations`. |
+| `evidence` | `result` (passed, failed, unknown, unmeasurable, out_of_scope), a `ref` to the result, `date`, `limitations`, and `provenance` (code version, rule revision, environment, workload, tool, period). |
 | `depends_on` | Other rule ids this rule relies on. |
 
 See [`rules.example.yaml`](../.claude/skills/business-rules/templates/rules.example.yaml).
@@ -32,16 +33,23 @@ See [`rules.example.yaml`](../.claude/skills/business-rules/templates/rules.exam
 python3 .claude/skills/business-rules/scripts/check_rules.py my-app.rules.yaml
 ```
 
-Needs PyYAML (`pip install pyyaml`). With jsonschema installed it also validates the shape. Exit codes: 1 structural errors, 2 a confirmed rule is violated, 3 (`--strict`) a confirmed rule is not verified.
+Needs PyYAML (`pip install pyyaml`). With jsonschema installed it also validates the shape.
+
+Exit codes: 0 acceptable within the evidenced scope, 1 structural errors, 2 a confirmed rule failed, 3 blocked (a confirmed required rule is unknown, unmeasurable, or out of scope). `--allow-unknown` reports blockers but exits 0, for work in progress. `--base <git-ref>` errors when a confirmed rule was changed or removed since that ref without a newer `decided_on`, which stops an implementation from weakening its own acceptance criteria.
+
+## Unknown versus unmeasurable
+
+`unknown` means not checked yet. `unmeasurable` means no available check can decide the rule, and needs a `reason`. Neither counts as satisfied. For a required but unmeasurable rule, either add checkable proxy rules (`proxies`), add a human review check (`method: review`, `strength: human`) with the reviewer's result as evidence, or have the decision maker revise the rule or set `required: false` with a recorded reason. A `passed` result carries its `strength`: a sampled pass is a pass within that sample only.
 
 ## Rules the checker enforces
 
 - Ids are unique and `depends_on` points at real rules.
 - Confirmed rules have a decider, a date, a non-inferred source, and required and forbidden scenarios.
-- `verified` or `violated` evidence needs a real check method and a result reference.
-- An open question cannot be verified.
+- `passed` or `failed` evidence needs a real check method and a result reference.
+- An open question cannot be passed. Unmeasurable evidence needs a reason, and its proxies must be rules in the file.
+- Confirmed rules must say whether they are required.
 
-Missing scenarios on proposed or open rules are warnings, as is verified evidence with no stated check strength.
+Warnings: missing scenarios on proposed or open rules, passed evidence with no stated check strength or provenance, and stale evidence dated before the rule's last decision.
 
 ## What it cannot do
 

@@ -3,69 +3,234 @@
   "title": "Zou business-rule file",
   "description": "Shape only. Cross-field rules and the coverage report are in scripts/check_rules.py.",
   "type": "object",
-  "required": ["app", "rules"],
+  "required": [
+    "app",
+    "rules"
+  ],
   "additionalProperties": false,
   "properties": {
-    "app": { "type": "string", "minLength": 1 },
-    "state": { "enum": ["idea", "specified", "built"], "description": "Where the app was when this file was started." },
-    "rules": { "type": "array", "items": { "$ref": "#/$defs/rule" } }
+    "app": {
+      "type": "string",
+      "minLength": 1
+    },
+    "state": {
+      "enum": [
+        "idea",
+        "specified",
+        "built"
+      ],
+      "description": "Where the app was when this file was started."
+    },
+    "rules": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/rule"
+      }
+    }
   },
   "$defs": {
     "rule": {
       "type": "object",
-      "required": ["id", "statement", "status"],
+      "required": [
+        "id",
+        "statement",
+        "status"
+      ],
       "additionalProperties": false,
       "properties": {
-        "id": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_-]*$" },
-        "statement": { "type": "string", "minLength": 1, "description": "Plain language; EARS wording (WHEN ... THE SYSTEM SHALL ...) is optional." },
-        "status": { "enum": ["confirmed", "proposed", "open"], "description": "confirmed = a decision maker decided it; proposed = inferred, awaiting decision; open = unresolved question." },
-        "rationale": { "type": "string" },
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9_-]*$"
+        },
+        "statement": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Plain language; EARS wording (WHEN ... THE SYSTEM SHALL ...) is optional."
+        },
+        "status": {
+          "enum": [
+            "confirmed",
+            "proposed",
+            "open"
+          ],
+          "description": "confirmed = a decision maker decided it; proposed = inferred, awaiting decision; open = unresolved question."
+        },
+        "rationale": {
+          "type": "string"
+        },
         "source": {
           "type": "object",
-          "required": ["kind"],
+          "required": [
+            "kind"
+          ],
           "additionalProperties": false,
           "properties": {
-            "kind": { "enum": ["stakeholder", "document", "code", "incident", "inferred"] },
-            "ref": { "type": "string" }
+            "kind": {
+              "enum": [
+                "stakeholder",
+                "document",
+                "code",
+                "incident",
+                "inferred"
+              ]
+            },
+            "ref": {
+              "type": "string"
+            }
           }
         },
-        "decided_by": { "type": "string" },
-        "decided_on": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
-        "depends_on": { "type": "array", "items": { "type": "string" } },
-        "scenarios": { "type": "array", "items": { "$ref": "#/$defs/scenario" } },
+        "decided_by": {
+          "type": "string"
+        },
+        "decided_on": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+        },
+        "depends_on": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "scenarios": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/scenario"
+          }
+        },
         "check": {
           "type": "object",
-          "required": ["method"],
+          "required": [
+            "method"
+          ],
           "additionalProperties": false,
           "properties": {
-            "method": { "enum": ["test", "assertion", "review", "proof", "measurement", "none"] },
-            "ref": { "type": "string" },
-            "strength": { "enum": ["exhaustive", "bounded", "sampled", "human"], "description": "How far the check's conclusion reaches." }
+            "method": {
+              "enum": [
+                "test",
+                "assertion",
+                "review",
+                "proof",
+                "measurement",
+                "none"
+              ]
+            },
+            "ref": {
+              "type": "string"
+            },
+            "strength": {
+              "enum": [
+                "exhaustive",
+                "bounded",
+                "sampled",
+                "human"
+              ],
+              "description": "How far the check's conclusion reaches."
+            }
           }
         },
         "evidence": {
           "type": "object",
-          "required": ["result"],
+          "required": [
+            "result"
+          ],
           "additionalProperties": false,
           "properties": {
-            "result": { "enum": ["verified", "violated", "unknown", "out_of_scope"] },
-            "ref": { "type": "string" },
-            "date": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
-            "limitations": { "type": "string" }
+            "result": {
+              "enum": [
+                "passed",
+                "failed",
+                "unknown",
+                "unmeasurable",
+                "out_of_scope"
+              ],
+              "description": "unknown = not checked yet but checkable; unmeasurable = no available check can decide it (needs reason; resolve via proxies, a human oracle, or a revised rule)."
+            },
+            "ref": {
+              "type": "string"
+            },
+            "date": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            },
+            "limitations": {
+              "type": "string"
+            },
+            "reason": {
+              "type": "string",
+              "description": "Why no check can decide the rule. Required when result is unmeasurable."
+            },
+            "proxies": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Ids of checkable rules that stand in for an unmeasurable one."
+            },
+            "provenance": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "code_version": {
+                  "type": "string"
+                },
+                "rule_revision": {
+                  "type": "string"
+                },
+                "environment": {
+                  "type": "string"
+                },
+                "workload": {
+                  "type": "string"
+                },
+                "tool": {
+                  "type": "string"
+                },
+                "period": {
+                  "type": "string"
+                }
+              }
+            }
           }
+        },
+        "required": {
+          "type": "boolean",
+          "description": "true = an outcome, invariant, or hard constraint that blocks acceptance while unevidenced. Mandatory on confirmed rules (checked by the script)."
         }
       }
     },
     "scenario": {
       "type": "object",
-      "required": ["kind", "name", "given", "when", "then"],
+      "required": [
+        "kind",
+        "name",
+        "given",
+        "when",
+        "then"
+      ],
       "additionalProperties": false,
       "properties": {
-        "kind": { "enum": ["required", "forbidden", "exceptional"], "description": "required = must work; forbidden = must be rejected or impossible; exceptional = edge or failure case." },
-        "name": { "type": "string", "minLength": 1 },
-        "given": { "type": "string" },
-        "when": { "type": "string" },
-        "then": { "type": "string" }
+        "kind": {
+          "enum": [
+            "required",
+            "forbidden",
+            "exceptional"
+          ],
+          "description": "required = must work; forbidden = must be rejected or impossible; exceptional = edge or failure case."
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "given": {
+          "type": "string"
+        },
+        "when": {
+          "type": "string"
+        },
+        "then": {
+          "type": "string"
+        }
       }
     }
   }
