@@ -428,4 +428,4 @@ Consider an AI-built API that passes every existing test. The system should not 
 
 This changes the goal from automatically proving that code passes the available checks to systematically discovering what evidence is still missing before trusting the code.
 
-This is a stronger foundation for the proposed autonomous development system than attempting to make every applicati
+This is a stronger foundation for the proposed autonomous development system than a one-size-fits-all approach, because every application is different.
