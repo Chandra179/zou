@@ -61,10 +61,6 @@ core:
     boundaries: Identify included behavior, relevant dependencies, and exclusions.
     stopping_rules:
       - >-
-        Stop specification refinement when scoped outcomes have checkable criteria
-        and unresolved questions are resolved, bounded, or assigned an investigation
-        sufficient to choose the next step.
-      - >-
         End an evaluation when evidence supports the stated decision, including
         rejection or further investigation; ending does not imply acceptance.
       - >-
@@ -136,7 +132,11 @@ evaluation_areas:
         or evidence that all requirements have been found.
     activities:
       - Translate intent and domain context into explicit claims.
-      - Identify conditions, assumptions, invariants, and acceptance criteria.
+      - Identify conditions, assumptions, and invariants for each claim.
+    stop_when: >-
+      Scoped outcomes have checkable criteria and unresolved questions are
+      resolved, bounded, or assigned an investigation sufficient to choose the
+      next step.
     checks:
       - Review ambiguities, contradictions, missing rules, and unsupported assumptions.
       - Validate required and forbidden scenarios against domain evidence.
@@ -149,6 +149,7 @@ evaluation_areas:
     activities:
       - Model architecture, dependencies, resources, and expected workloads.
       - Predict behavior and resource consumption under explicit conditions.
+      - Decide whether to accept, revise the design, or revisit the specification.
     checks:
       - Evaluate feasibility, compatibility, and resource budgets.
       - Examine model assumptions and uncertainty in predictions.
@@ -160,7 +161,7 @@ evaluation_areas:
       - Execute the implementation when a check requires observed behavior.
     checks:
       - Apply static analysis or formal verification where appropriate.
-      - Test behavioral invariants, boundaries, concurrency, and failure recovery.
+      - Test behavioral invariants, boundaries, concurrency, and failure recovery where relevant.
       - Measure resource consumption under defined workloads when relevant.
 
   runtime:
@@ -168,6 +169,7 @@ evaluation_areas:
     activities:
       - Observe actual behavior and collect measurements with operating context.
       - Compare observations with specifications, predictions, and assumptions.
+      - Decide whether to accept, investigate, or revise the implementation, model, or assumptions.
     checks:
       - Monitor behavioral invariants and operational constraints.
       - Check whether assumptions and previously accepted evidence remain applicable.
