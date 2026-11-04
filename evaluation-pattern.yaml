@@ -1,10 +1,15 @@
 # Conceptual model; these declarations do not execute checks or enforce policy.
+# Normative wording ("must", "is not treated as", "does not waive") describes how
+# people and agents applying the model should reason, not automated enforcement.
 intent: >-
   Guide software development and operation through explicit claims, appropriate
   checks, and evidence-based decisions about what to accept or revise.
 
 # How we evaluate a claim, regardless of what is being evaluated.
 core:
+  # Stage order is the default path, not a fixed script. After `decision`, only
+  # the stages the decision calls for run: revise (targeted_revision), gather
+  # more evidence (check), investigate, or escalate. Acceptance may end the loop.
   loop:
     - claim
     - conditions_and_assumptions
@@ -29,7 +34,8 @@ core:
       Decide whether to accept within the evidenced scope, revise, investigate,
       gather more evidence, or escalate unresolved questions.
     targeted_revision: >-
-      Revise the part implicated by the evidence. Validate changes to claims
+      When the decision calls for revision, revise the part implicated by the
+      evidence. Validate changes to claims
       and acceptance criteria separately from implementation repair.
     repeat: >-
       Re-evaluate affected claims after revision or changes to their supporting
@@ -62,9 +68,15 @@ core:
         End an evaluation when evidence supports the stated decision, including
         rejection or further investigation; ending does not imply acceptance.
       - >-
+        A claim is required when it expresses a confirmed user outcome, an
+        invariant, or a hard constraint; all other claims are optional.
+      - >-
         Record remaining uncertainty, its consequences, and reasons for proceeding
-        or deferring. Accepted uncertainty does not make an unknown claim satisfied
-        or waive a required outcome, invariant, or hard constraint.
+        or deferring. Work may proceed with an unknown optional claim, which stays
+        unknown. Accepted uncertainty never makes an unknown claim satisfied, and
+        a required claim that is unknown blocks acceptance until it is
+        evidenced, or until the decision maker revises or removes the requirement
+        through the specification area.
       - >-
         Do not require exhaustive scenarios or complete knowledge of the system.
         Revisit the scope when new evidence reveals a material gap.
