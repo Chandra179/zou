@@ -1,0 +1,55 @@
+app: example-shop
+state: idea
+rules:
+  - id: DISC-1
+    statement: WHEN a discount is applied, THE SYSTEM SHALL reject any discount above 15%.
+    status: confirmed
+    rationale: Margin policy.
+    source:
+      kind: stakeholder
+      ref: "pricing owner, kickoff call"
+    decided_by: Dana (pricing owner)
+    decided_on: 2026-11-04
+    scenarios:
+      - kind: required
+        name: 10% accepted
+        given: price 100
+        when: discount 10%
+        then: total 90
+      - kind: forbidden
+        name: 20% rejected
+        given: price 100
+        when: discount 20%
+        then: error and price unchanged
+      - kind: exceptional
+        name: negative discount
+        given: price 100
+        when: discount -5%
+        then: error
+    check:
+      method: test
+      ref: tests/test_discount.py
+      strength: sampled
+    evidence:
+      result: verified
+      ref: ci run 123
+      date: 2026-11-04
+      limitations: three sampled inputs only
+
+  - id: DISC-2
+    statement: Discounts are applied before tax.
+    status: proposed
+    rationale: Common convention; not yet decided.
+    source:
+      kind: inferred
+      ref: domain convention
+    scenarios:
+      - kind: required
+        name: pre-tax
+        given: price 100 and tax 10%
+        when: discount 10%
+        then: total 99
+
+  - id: DISC-3
+    statement: Which products are excluded from discounts?
+    status: open
