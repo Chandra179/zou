@@ -5,7 +5,11 @@ description: Draw out, record, and check an app's business rules in a rules file
 
 # Business rules
 
-Goal: a rules file (`<app>.rules.yaml`, shape in `rule-file.schema.json`, example in `templates/rules.example.yaml`) where every rule says who decided it, which scenarios define it, how it is checked, and what the evidence is. Unknown is never treated as satisfied.
+Goal: a rules file (`<app>.rules.yaml`, shape in `rule-file.schema.json`, example in `templates/rules.example.yaml`, both in the tools folder below) where every rule says who decided it, which scenarios define it, how it is checked, and what the evidence is. Unknown is never treated as satisfied.
+
+## Where the tools are
+
+The checker, schema, example and tests live in the zou repo at `tools/business-rules/`, not in this folder. `<tools>` means that folder. When this skill is installed as a symlink, find it with `readlink -f <this skill folder>`, then `../../../tools/business-rules` from there. In the zou repo itself it is `tools/business-rules`.
 
 ## Ground rules
 
@@ -28,7 +32,7 @@ Ask in small batches, not a long questionnaire. Record the answer and its date b
 ## Loop
 
 1. Update the rules file.
-2. Run `python3 scripts/check_rules.py <file>` (path relative to this skill) every time, before committing. It compares against the last commit and errors if a confirmed rule was weakened. Fix structural errors. Do not silence them by loosening the file, and never pass `--no-base` or `--skip-shape` to get past an error.
+2. Run `python3 <tools>/check_rules.py <file>` every time, before committing. It compares against the last commit and errors if a confirmed rule was weakened. Fix structural errors. Do not silence them by loosening the file, and never pass `--no-base` or `--skip-shape` to get past an error.
 3. Show the user the report: rules awaiting their decision, open questions, confirmed rules with no check, and confirmed rules that are blocked (unknown, unmeasurable, out of scope) or failed.
 4. Pick the next gap, with the user, and repeat.
 

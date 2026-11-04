@@ -1,6 +1,6 @@
-"""Regression tests for scripts/check_rules.py. Run:
+"""Regression tests for check_rules.py. Run:
 
-    python3 -m unittest discover .claude/skills/business-rules/tests
+    python3 -m unittest discover tools/business-rules/tests
 """
 import os
 import subprocess
@@ -11,7 +11,7 @@ import unittest
 from pathlib import Path
 
 SKILL = Path(__file__).resolve().parent.parent
-SCRIPT = SKILL / "scripts" / "check_rules.py"
+SCRIPT = SKILL / "check_rules.py"
 EXAMPLE = SKILL / "templates" / "rules.example.yaml"
 
 RULE = """\

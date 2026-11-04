@@ -37,7 +37,7 @@ _Loader.yaml_implicit_resolvers = {
     for k, v in yaml.SafeLoader.yaml_implicit_resolvers.items()
 }
 
-SCHEMA = Path(__file__).resolve().parent.parent / "rule-file.schema.json"
+SCHEMA = Path(__file__).resolve().parent / "rule-file.schema.json"
 UNSETTLED = ("unknown", "unmeasurable", "out_of_scope")
 GUARDED = ("statement", "scenarios", "check", "required")
 

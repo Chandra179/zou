@@ -1,6 +1,6 @@
 # Business rules: file format and how-to
 
-Applies the [evaluation pattern](../evaluation-pattern.yaml) to one problem: getting an app's business rules specified correctly. The format and checker live in the [`business-rules` skill](../.claude/skills/business-rules/SKILL.md).
+Applies the [evaluation pattern](../evaluation-pattern.yaml) to one problem: getting an app's business rules specified correctly. The format and [checker](../tools/business-rules/check_rules.py) are plain Python and need no Claude. The optional [Claude skill](../.claude/skills/business-rules/SKILL.md) helps draw rules out.
 
 ## The idea
 
@@ -20,7 +20,7 @@ Write every rule as a record that answers: who decided it, which concrete cases 
 | `evidence` | `result` (passed, failed, unknown, unmeasurable, out_of_scope), a `ref` to the result, `date`, `limitations`, and `provenance` (code version, rule revision, environment, workload, tool, period). |
 | `depends_on` | Other rule ids this rule relies on. If one of them fails, this rule's pass counts as unknown. |
 
-See [`rules.example.yaml`](../.claude/skills/business-rules/templates/rules.example.yaml).
+See [`rules.example.yaml`](../tools/business-rules/templates/rules.example.yaml).
 
 ## Workflow
 
@@ -31,7 +31,7 @@ See [`rules.example.yaml`](../.claude/skills/business-rules/templates/rules.exam
 5. **Run the checker** and work through the gaps it lists.
 
 ```
-python3 .claude/skills/business-rules/scripts/check_rules.py my-app.rules.yaml
+python3 tools/business-rules/check_rules.py my-app.rules.yaml
 ```
 
 Needs PyYAML and jsonschema (`pip install pyyaml jsonschema`). Without jsonschema the checker stops with an error unless you pass `--skip-shape`.
@@ -62,7 +62,7 @@ Warnings: missing scenarios on proposed or open rules, passed evidence with no s
 ## Tests
 
 ```
-python3 -m unittest discover .claude/skills/business-rules/tests
+python3 -m unittest discover tools/business-rules/tests
 ```
 
 ## What it cannot do

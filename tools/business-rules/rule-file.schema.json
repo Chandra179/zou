@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Zou business-rule file",
-  "description": "Shape only. Cross-field rules and the coverage report are in scripts/check_rules.py.",
+  "description": "Shape only. Cross-field rules and the coverage report are in check_rules.py.",
   "type": "object",
   "required": [
     "app",
