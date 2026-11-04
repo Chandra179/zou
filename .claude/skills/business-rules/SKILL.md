@@ -28,11 +28,13 @@ Ask in small batches, not a long questionnaire. Record the answer and its date b
 ## Loop
 
 1. Update the rules file.
-2. Run `python3 scripts/check_rules.py <file>` (path relative to this skill). Fix structural errors. Do not silence them by loosening the file.
+2. Run `python3 scripts/check_rules.py <file>` (path relative to this skill) every time, before committing. It compares against the last commit and errors if a confirmed rule was weakened. Fix structural errors. Do not silence them by loosening the file, and never pass `--no-base` or `--skip-shape` to get past an error.
 3. Show the user the report: rules awaiting their decision, open questions, confirmed rules with no check, and confirmed rules that are blocked (unknown, unmeasurable, out of scope) or failed.
 4. Pick the next gap, with the user, and repeat.
 
-Exit codes: 0 acceptable within the evidenced scope, 1 structural errors, 2 a confirmed rule failed, 3 blocked (a confirmed required rule is unknown, unmeasurable, or out of scope). Use `--allow-unknown` while work is in progress, and `--base <git-ref>` to error when a confirmed rule's statement, scenarios, check, or `required` changed without a newer `decided_on`. The script needs PyYAML, and uses jsonschema for shape checks when installed.
+Bump a rule's `revision` (and `decided_on`) only when the user re-decides it, never to get past the weakening check. If a rule's dependency (`depends_on`) failed, the checker downgrades the dependent rule's pass to unknown: report that, do not hide it.
+
+Exit codes: 0 acceptable within the evidenced scope, 1 structural errors, 2 a confirmed rule failed, 3 blocked (a confirmed required rule is unknown, unmeasurable, or out of scope). Use `--allow-unknown` while work is in progress. By default the checker compares with `HEAD` (when the file is in git) and errors when a confirmed rule's statement, scenarios, check, or `required` changed without a newer `decided_on` or higher `revision`; `--base <git-ref>` picks another base and `--no-base` turns it off. The script needs PyYAML and jsonschema (`--skip-shape` skips the shape checks).
 
 ## Limits to tell the user
 

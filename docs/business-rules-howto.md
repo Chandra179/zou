@@ -12,12 +12,13 @@ Write every rule as a record that answers: who decided it, which concrete cases 
 | --- | --- |
 | `id`, `statement` | Stable name and the rule in plain language (EARS wording is optional). |
 | `status` | `confirmed`: a decision maker decided it. `proposed`: inferred, awaiting a decision. `open`: an unresolved question. |
+| `revision` | Integer, starting at 1. Bump it each time a decision maker re-decides a confirmed rule, including several times on one day. |
 | `required` | `true` for an outcome, invariant, or hard constraint that blocks acceptance while unevidenced. Mandatory on confirmed rules. |
 | `source`, `decided_by`, `decided_on` | Where it came from and who decided it. Required for `confirmed`; the source cannot be `inferred`. |
 | `scenarios` | Concrete given / when / then cases, each `required`, `forbidden`, or `exceptional`. A confirmed rule needs at least one required and one forbidden scenario. |
 | `check` | `method` (test, assertion, review, proof, measurement, none), optional `ref`, and `strength` (exhaustive, bounded, sampled, human). |
 | `evidence` | `result` (passed, failed, unknown, unmeasurable, out_of_scope), a `ref` to the result, `date`, `limitations`, and `provenance` (code version, rule revision, environment, workload, tool, period). |
-| `depends_on` | Other rule ids this rule relies on. |
+| `depends_on` | Other rule ids this rule relies on. If one of them fails, this rule's pass counts as unknown. |
 
 See [`rules.example.yaml`](../.claude/skills/business-rules/templates/rules.example.yaml).
 
@@ -33,9 +34,15 @@ See [`rules.example.yaml`](../.claude/skills/business-rules/templates/rules.exam
 python3 .claude/skills/business-rules/scripts/check_rules.py my-app.rules.yaml
 ```
 
-Needs PyYAML (`pip install pyyaml`). With jsonschema installed it also validates the shape.
+Needs PyYAML and jsonschema (`pip install pyyaml jsonschema`). Without jsonschema the checker stops with an error unless you pass `--skip-shape`.
 
-Exit codes: 0 acceptable within the evidenced scope, 1 structural errors, 2 a confirmed rule failed, 3 blocked (a confirmed required rule is unknown, unmeasurable, or out of scope). `--allow-unknown` reports blockers but exits 0, for work in progress. `--base <git-ref>` errors when a confirmed rule was changed or removed since that ref without a newer `decided_on`, which stops an implementation from weakening its own acceptance criteria.
+Exit codes: 0 acceptable within the evidenced scope, 1 structural errors, 2 a confirmed rule failed, 3 blocked (a confirmed required rule is unknown, unmeasurable, or out of scope). `--allow-unknown` reports blockers but exits 0, for work in progress.
+
+By default the checker also compares the file with `HEAD` (when it is tracked in git) and errors when a confirmed rule's statement, scenarios, check, or `required` was changed, or the rule was removed, without a newer `decided_on` or a higher `revision`. This stops an implementation from weakening its own acceptance criteria. Run it before committing, since after the commit `HEAD` already contains the change. `--base <git-ref>` compares with another point in history; `--no-base` turns the comparison off.
+
+## Dependencies
+
+If a rule that passed depends on a rule that failed, its pass is downgraded to unknown in the report and exit code, so a required rule becomes blocked. If a dependency is merely unknown, unmeasurable, out of scope, or not confirmed, the checker warns. Proxies that are unconfirmed or failed do not resolve an unmeasurable rule. Dependency cycles are errors.
 
 ## Unknown versus unmeasurable
 
@@ -48,8 +55,15 @@ Exit codes: 0 acceptable within the evidenced scope, 1 structural errors, 2 a co
 - `passed` or `failed` evidence needs a real check method and a result reference.
 - An open question cannot be passed. Unmeasurable evidence needs a reason, and its proxies must be rules in the file.
 - Confirmed rules must say whether they are required.
+- No dependency cycles.
 
-Warnings: missing scenarios on proposed or open rules, passed evidence with no stated check strength or provenance, and stale evidence dated before the rule's last decision.
+Warnings: missing scenarios on proposed or open rules, passed evidence with no stated check strength or provenance, and stale evidence dated before the rule's last decision or checked against an older `revision`.
+
+## Tests
+
+```
+python3 -m unittest discover .claude/skills/business-rules/tests
+```
 
 ## What it cannot do
 

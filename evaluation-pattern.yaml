@@ -80,6 +80,9 @@ core:
         reviewer evidence, or have the decision maker revise or relax it. An
         undecidable required claim is never treated as satisfied.
       - >-
+        Tooling may report evidence status and block on unmet required claims, but
+        the decision to accept stays with the accountable human decision maker.
+      - >-
         Record how far a passing result reaches (exhaustive, bounded, sampled, or
         human judgment) and the conditions it was obtained under, so that "passed"
         is not read as proof beyond the evidenced scope.

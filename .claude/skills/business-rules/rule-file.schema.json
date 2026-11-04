@@ -196,6 +196,11 @@
         "required": {
           "type": "boolean",
           "description": "true = an outcome, invariant, or hard constraint that blocks acceptance while unevidenced. Mandatory on confirmed rules (checked by the script)."
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Bump on every re-decision of a confirmed rule (including several on one day). Missing counts as 1."
         }
       }
     },

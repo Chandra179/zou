@@ -4,6 +4,7 @@ rules:
   - id: DISC-1
     statement: WHEN a discount is applied, THE SYSTEM SHALL reject any discount above 15%.
     status: confirmed
+    revision: 1
     required: true
     rationale: Margin policy.
     source:
@@ -46,6 +47,7 @@ rules:
   - id: UX-1
     statement: Checkout feels trustworthy to first-time buyers.
     status: confirmed
+    revision: 1
     required: false
     rationale: Important, but no available check can decide it. Kept optional until proxies exist.
     source:
@@ -83,6 +85,8 @@ rules:
     statement: Discounts are applied before tax.
     status: proposed
     rationale: Common convention; not yet decided.
+    depends_on:
+      - DISC-1
     source:
       kind: inferred
       ref: domain convention
