@@ -36,9 +36,44 @@ python3 tools/business-rules/check_rules.py my-app.rules.yaml
 
 Needs PyYAML and jsonschema (`pip install pyyaml jsonschema`). Without jsonschema the checker stops with an error unless you pass `--skip-shape`.
 
-Exit codes: 0 acceptable within the evidenced scope, 1 structural errors, 2 a confirmed rule failed, 3 blocked (a confirmed required rule is unknown, unmeasurable, or out of scope). `--allow-unknown` reports blockers but exits 0, for work in progress.
+Exit codes: 0 acceptable within the evidenced scope, 1 structural errors, 2 a confirmed rule failed, 3 blocked (a confirmed required rule is unknown, unmeasurable, out of scope, or uses a parameter that is not confirmed or has no value). `--allow-unknown` reports blockers but exits 0, for work in progress.
 
-By default the checker also compares the file with `HEAD` (when it is tracked in git) and errors when a confirmed rule's statement, scenarios, check, or `required` was changed, or the rule was removed, without a newer `decided_on` or a higher `revision`. This stops an implementation from weakening its own acceptance criteria. Run it before committing, since after the commit `HEAD` already contains the change. `--base <git-ref>` compares with another point in history; `--no-base` turns the comparison off.
+By default the checker also compares the file with `HEAD` (when it is tracked in git) and errors when a confirmed rule's statement, scenarios, check, `uses`, or `required` was changed, or the rule was removed, without a newer `decided_on` or a higher `revision`. This stops an implementation from weakening its own acceptance criteria. Run it before committing, since after the commit `HEAD` already contains the change. `--base <git-ref>` compares with another point in history; `--no-base` turns the comparison off; `--today YYYY-MM-DD` sets the date for expiry checks.
+
+## One source of truth: parameters, assumptions, datasets
+
+The file is the only place a rule's numbers, conditions and reference data are stated. Code, tests and configuration read them from it; they do not restate them. Three optional sections sit beside `rules`:
+
+| Section | Holds | Key fields |
+| --- | --- | --- |
+| `assumptions` | Conditions rules and measurements hold under: workload, environment, scope, external facts. | `kind`, `status`, `source`, `valid_until` |
+| `parameters` | Named numbers and settings: limits, thresholds, budgets, measured values. | `value`, `unit`, `origin`, `mutability`, `changeable_by`, `bounds`, `measurement`, `assumptions`, `review_by` |
+| `datasets` | Static reference data (rates, catalogues), tracked by version. | `version`, `path`, `mutability`, `owner`, `review_by` |
+
+A rule links to them with `uses: {parameters: [...], assumptions: [...], datasets: [...]}`, and its statement names a parameter (`above P-max-discount`) instead of containing the number.
+
+**Origin** says where a value came from: `decided` (a person chose it), `measured` (taken from a measurement; record `measurement.date`, `workload`, `environment`, `tool`, `period`, `sample_size`), or `estimated` (a prediction or guess, so usually `proposed`).
+
+**Mutability** says when it may change: `build` (fixed when the app is built or tested) or `runtime` (may change while the app runs). A runtime number should have `bounds`, so a bad change can be rejected without a redeploy.
+
+**Who may change it** is `changeable_by`: `business_owner`, `developer`, `measurement`. A decided value changes only with a newer `decided_on` or a higher `revision`, the same as a rule. A measured value whose `changeable_by` includes `measurement` may be replaced by a newer measurement (a later `measurement.date`) without a new decision. Bounds, origin, mutability and `changeable_by` themselves always need a decision, so a change cannot grant itself permission.
+
+What the checker adds:
+
+- Errors: a rule or parameter pointing at an unknown id; an id reused across sections; a confirmed parameter with no value, decider, date or non-inferred source; a confirmed measured value with no `measurement.date`; a value outside its bounds; a confirmed parameter or assumption weakened or removed since the base commit.
+- Warnings: expired assumptions (`valid_until`), overdue `review_by`, a runtime number without bounds, a rule whose evidence is older than a parameter it uses, a rule using an unconfirmed assumption.
+- Blocking: a confirmed required rule that uses a parameter that is not confirmed or has no value is blocked (exit 3), because the rule cannot be satisfied with a guess.
+
+Code reads the values with the exporter, which validates the file first and refuses unconfirmed parameters:
+
+```
+python3 tools/business-rules/export_params.py my-app.rules.yaml --mutability build --format env
+python3 tools/business-rules/export_params.py my-app.rules.yaml --mutability runtime   # json, with bounds
+```
+
+Use `build` output for generated constants or deploy variables, and `runtime` output for a loader that reloads while the app runs. The runtime loader should reject values outside `bounds`. The checker cannot see a number hard-coded in source; a code review or a test that loads the exported value (and fails if the file and the code disagree) covers that gap.
+
+Why these fields: they follow the books and papers in [research](research/research-review.md) and [books](research/books.md). Requirements, specifications and environmental assumptions are kept apart (Calinescu et al.); parameters say whether a value was stated or measured and who owns it (Spinner et al.); workload and deployment are separate from resource demand, so one can change without redoing the other (Palladio); a measurement carries the conditions it was taken under (Gregg; Smith and Williams); and expiry and revision keep an old claim from standing in for a current one. These support the design; none of them shows this format works. That is what using it will show.
 
 ## Dependencies
 

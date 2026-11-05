@@ -2,13 +2,15 @@
 """Check a Zou business-rule file and print an evidence report.
 
 Usage: check_rules.py RULES.yaml [--allow-unknown] [--base GIT_REF | --no-base] [--skip-shape] [--json]
+                      [--today YYYY-MM-DD]
 
 Exit codes:
   0  acceptable within the evidenced scope
   1  structural errors, or a confirmed rule weakened since the base commit
   2  a confirmed rule failed
   3  blocked: a confirmed required rule is unknown, unmeasurable, or out of
-     scope (--allow-unknown reports the blockers but exits 0)
+     scope, or uses a parameter that is not confirmed or has no value
+     (--allow-unknown reports the blockers but exits 0)
 
 This checks structure and recorded evidence only. It cannot tell whether a
 rule is the right rule: that is what `confirmed` records. Needs PyYAML and
@@ -16,6 +18,7 @@ jsonschema (or --skip-shape). Compares against HEAD by default when the file is
 in git; a weakened confirmed rule needs a newer decided_on or higher revision.
 """
 import argparse
+import datetime
 import json
 import subprocess
 import sys
@@ -39,7 +42,8 @@ _Loader.yaml_implicit_resolvers = {
 
 SCHEMA = Path(__file__).resolve().parent / "rule-file.schema.json"
 UNSETTLED = ("unknown", "unmeasurable", "out_of_scope")
-GUARDED = ("statement", "scenarios", "check", "required")
+GUARDED = ("statement", "scenarios", "check", "required", "uses")
+PARAM_GUARDED = ("origin", "mutability", "unit", "bounds", "changeable_by", "assumptions")
 
 
 def shape_errors(doc):
@@ -110,7 +114,7 @@ def find_cycle(rules):
     return None
 
 
-def check(doc):
+def check(doc, today=None, base_dir=None):
     errors, warnings = [], []
     rules = [r for r in doc.get("rules") or [] if isinstance(r, dict)]
     ids = [r.get("id") for r in rules]
@@ -203,6 +207,132 @@ def check(doc):
             ev_rev = None
         if ev_rev is not None and ev_rev < rev_of(r):
             warnings.append(f"{rid}: stale evidence: checked rule revision {ev_rev}, rule is now revision {rev_of(r)}")
+    e2, w2 = check_data(doc, today or datetime.date.today().isoformat(), base_dir)
+    return errors + e2, warnings + w2
+
+
+SECTIONS = ("assumptions", "parameters", "datasets")
+
+
+def items(doc, key):
+    return [x for x in doc.get(key) or [] if isinstance(x, dict)]
+
+
+def is_number(v):
+    return isinstance(v, (int, float)) and not isinstance(v, bool)
+
+
+def param_stamp(p):
+    """Latest date at which a parameter's value was decided or measured."""
+    return max(p.get("decided_on") or "", (p.get("measurement") or {}).get("date") or "")
+
+
+def unsettled(p):
+    return p.get("status") != "confirmed" or p.get("value") is None
+
+
+def check_data(doc, today, base_dir=None):
+    """Checks for assumptions, parameters, datasets, and the rules' `uses` links."""
+    errors, warnings = [], []
+    rules = items(doc, "rules")
+    A = {x.get("id"): x for x in items(doc, "assumptions")}
+    P = {x.get("id"): x for x in items(doc, "parameters")}
+    D = {x.get("id"): x for x in items(doc, "datasets")}
+    # Duplicates among rules are reported by check(); here, one id reused across sections.
+    every = Counter({r.get("id") for r in rules})
+    for key in SECTIONS:
+        every.update(x.get("id") for x in items(doc, key))
+    for xid, n in every.items():
+        if n > 1:
+            errors.append(f"{xid}: id is used more than once across rules, assumptions, parameters, datasets")
+
+    def expired(d):
+        return bool(d) and d < today
+
+    for xid, a in A.items():
+        if a.get("status") == "confirmed":
+            for f in ("decided_by", "decided_on"):
+                if not a.get(f):
+                    errors.append(f"{xid}: confirmed assumption missing {f}")
+            if (a.get("source") or {}).get("kind") in (None, "inferred"):
+                errors.append(f"{xid}: confirmed assumption but source is missing or 'inferred'")
+        if expired(a.get("valid_until")):
+            warnings.append(f"{xid}: assumption expired on {a['valid_until']}; re-confirm or update it")
+
+    for pid, p in P.items():
+        origin, value = p.get("origin"), p.get("value")
+        m = p.get("measurement") or {}
+        b = p.get("bounds") or {}
+        lo, hi = b.get("min"), b.get("max")
+        if p.get("status") == "confirmed":
+            for f in ("decided_by", "decided_on"):
+                if not p.get(f):
+                    errors.append(f"{pid}: confirmed parameter missing {f}")
+            if (p.get("source") or {}).get("kind") in (None, "inferred"):
+                errors.append(f"{pid}: confirmed parameter but source is missing or 'inferred'")
+            if value is None:
+                errors.append(f"{pid}: confirmed parameter has no value")
+            if origin in ("measured", "estimated"):
+                if not m.get("date"):
+                    errors.append(f"{pid}: confirmed {origin} value has no measurement.date")
+                if not m.get("workload"):
+                    warnings.append(f"{pid}: {origin} value does not name the workload assumption it was taken under")
+        if m.get("workload") and m["workload"] not in A:
+            errors.append(f"{pid}: measurement.workload {m['workload']} is not an assumption in this file")
+        for a in p.get("assumptions") or []:
+            if a not in A:
+                errors.append(f"{pid}: assumptions lists unknown assumption {a}")
+            elif A[a].get("status") != "confirmed":
+                warnings.append(f"{pid}: relies on assumption {a}, which is not confirmed")
+            elif expired(A[a].get("valid_until")):
+                warnings.append(f"{pid}: relies on assumption {a}, which expired on {A[a]['valid_until']}")
+        if lo is not None and hi is not None and lo > hi:
+            errors.append(f"{pid}: bounds.min {lo} is above bounds.max {hi}")
+        if b and value is not None:
+            if not is_number(value):
+                errors.append(f"{pid}: bounds given but value is not a number")
+            else:
+                if lo is not None and value < lo:
+                    errors.append(f"{pid}: value {value} is below bounds.min {lo}")
+                if hi is not None and value > hi:
+                    errors.append(f"{pid}: value {value} is above bounds.max {hi}")
+        if "measurement" in (p.get("changeable_by") or []) and origin == "decided":
+            warnings.append(f"{pid}: changeable_by includes measurement, but the value is origin 'decided'")
+        if p.get("mutability") == "runtime" and is_number(value) and not b:
+            warnings.append(f"{pid}: runtime numeric parameter has no bounds, so a bad change cannot be rejected")
+        if expired(p.get("review_by")):
+            warnings.append(f"{pid}: review overdue since {p['review_by']}")
+
+    for did, d in D.items():
+        if expired(d.get("review_by")):
+            warnings.append(f"{did}: dataset review overdue since {d['review_by']}")
+        if d.get("path") and base_dir is not None and not (Path(base_dir) / d["path"]).exists():
+            warnings.append(f"{did}: dataset path {d['path']} does not exist relative to the rules file")
+
+    for r in rules:
+        rid = r.get("id", "?")
+        uses = r.get("uses") or {}
+        for key, table in (("parameters", P), ("assumptions", A), ("datasets", D)):
+            for x in uses.get(key) or []:
+                if x not in table:
+                    errors.append(f"{rid}: uses unknown {key[:-1]} {x}")
+        ev_date = (r.get("evidence") or {}).get("date")
+        for x in uses.get("parameters") or []:
+            p = P.get(x)
+            if p is None:
+                continue
+            if unsettled(p):
+                warnings.append(f"{rid}: uses parameter {x}, which is not confirmed or has no value")
+            if ev_date and param_stamp(p) and ev_date < param_stamp(p):
+                warnings.append(f"{rid}: stale evidence: dated {ev_date}, before parameter {x} was set ({param_stamp(p)})")
+        for x in uses.get("assumptions") or []:
+            a = A.get(x)
+            if a is None:
+                continue
+            if a.get("status") != "confirmed":
+                warnings.append(f"{rid}: uses assumption {x}, which is not confirmed")
+            elif expired(a.get("valid_until")):
+                warnings.append(f"{rid}: uses assumption {x}, which expired on {a['valid_until']}")
     return errors, warnings
 
 
@@ -227,6 +357,43 @@ def weakened(doc, base):
         if changed and not newer:
             errs.append(f"{rid}: changed {', '.join(changed)} since base without a newer decided_on "
                         "or higher revision")
+    return errs + weakened_data(doc, base)
+
+
+def newer_decision(cur, old):
+    return (cur.get("decided_on") or "") > (old.get("decided_on") or "") or rev_of(cur) > rev_of(old)
+
+
+def weakened_data(doc, base):
+    """Errors for confirmed assumptions and parameters changed or dropped without a newer decision.
+    A measured value may change with a newer measurement.date when `measurement` is in its changeable_by."""
+    errs = []
+    for key, guarded in (("assumptions", ("statement",)), ("parameters", PARAM_GUARDED)):
+        now = {x.get("id"): x for x in items(doc, key)}
+        for old in items(base, key):
+            if old.get("status") != "confirmed":
+                continue
+            xid, cur = old.get("id"), now.get(old.get("id"))
+            if cur is None:
+                errs.append(f"{xid}: confirmed {key[:-1]} removed since base")
+                continue
+            newer = newer_decision(cur, old)
+            if cur.get("status") != "confirmed" and not newer:
+                errs.append(f"{xid}: no longer confirmed since base, with no newer decided_on or higher revision")
+                continue
+            changed = [f for f in guarded if cur.get(f) != old.get(f)]
+            if changed and not newer:
+                errs.append(f"{xid}: changed {', '.join(changed)} since base without a newer decided_on "
+                            "or higher revision")
+            if key == "parameters" and cur.get("value") != old.get("value") and not newer:
+                remeasured = ("measurement" in (old.get("changeable_by") or [])
+                              and old.get("origin") in ("measured", "estimated")
+                              and cur.get("origin") == old.get("origin")
+                              and ((cur.get("measurement") or {}).get("date") or "")
+                              > ((old.get("measurement") or {}).get("date") or ""))
+                if not remeasured:
+                    errs.append(f"{xid}: changed value since base without a newer decided_on or higher "
+                                "revision (a measurement-updated value needs a newer measurement.date)")
     return errs
 
 
@@ -244,7 +411,8 @@ def load_base(path, ref):
         return None, f"--base {ref}: could not read the file at that ref ({e.__class__.__name__}); weakening check skipped"
 
 
-def report(doc):
+def report(doc, today=None):
+    today = today or datetime.date.today().isoformat()
     rules = [r for r in doc.get("rules") or [] if isinstance(r, dict)]
     confirmed = [r for r in rules if r.get("status") == "confirmed"]
     req = [r for r in confirmed if r.get("required")]
@@ -257,6 +425,17 @@ def report(doc):
     def ids(rs):
         return [r["id"] for r in rs]
 
+    params = {p.get("id"): p for p in items(doc, "parameters")}
+    blocked_params = []
+    for r in req:
+        bad = [x for x in (r.get("uses") or {}).get("parameters") or []
+               if x in params and unsettled(params[x])]
+        if bad:
+            blocked_params.append(f"{r['id']} ({', '.join(bad)})")
+    overdue = [x["id"] for x in items(doc, "assumptions") if x.get("valid_until") and x["valid_until"] < today]
+    overdue += [x["id"] for k in ("parameters", "datasets") for x in items(doc, k)
+                if x.get("review_by") and x["review_by"] < today]
+
     return {
         "app": doc.get("app"),
         "rules_by_status": dict(Counter(r.get("status") for r in rules)),
@@ -266,6 +445,9 @@ def report(doc):
         "blocked_unchecked": ids(r for r in req if ev_of(r) == "unknown"),
         "blocked_unmeasurable": ids(r for r in req if ev_of(r) == "unmeasurable"),
         "blocked_out_of_scope": ids(r for r in req if ev_of(r) == "out_of_scope"),
+        "blocked_parameters": blocked_params,
+        "unsettled_parameters": [pid for pid, p in params.items() if unsettled(p)],
+        "expired_or_overdue": overdue,
         "optional_gaps": ids(r for r in opt if ev_of(r) in UNSETTLED),
         "confirmed_without_check": ids(r for r in confirmed if (r.get("check") or {}).get("method", "none") == "none"),
         "sampled_passes": ids(r for r in confirmed if ev_of(r) == "passed"
@@ -281,7 +463,10 @@ LABELS = (
     ("Blocked, required, not checked yet", "blocked_unchecked"),
     ("Blocked, required, unmeasurable (needs proxies, human review, or a decision)", "blocked_unmeasurable"),
     ("Blocked, required, out of scope", "blocked_out_of_scope"),
+    ("Blocked, required, uses a parameter that is not confirmed or has no value", "blocked_parameters"),
     ("Optional rules with no settled evidence (not blocking)", "optional_gaps"),
+    ("Parameters not confirmed or without a value", "unsettled_parameters"),
+    ("Expired assumptions or overdue reviews", "expired_or_overdue"),
     ("Confirmed, no check defined", "confirmed_without_check"),
     ("Passed on sampled evidence only", "sampled_passes"),
     ("Proposed, awaiting your decision", "awaiting_confirmation"),
@@ -298,6 +483,7 @@ def main():
     ap.add_argument("--no-base", action="store_true", help="skip the weakening check")
     ap.add_argument("--skip-shape", action="store_true", help="skip JSON Schema shape checks (not recommended)")
     ap.add_argument("--json", action="store_true")
+    ap.add_argument("--today", metavar="YYYY-MM-DD", help="date used for expiry and review checks (default: today)")
     a = ap.parse_args()
 
     path = Path(a.file)
@@ -322,7 +508,7 @@ def main():
             return 1
         errors = shape_errors(doc)
     if not errors:
-        e2, w2 = check(doc)
+        e2, w2 = check(doc, a.today, path.resolve().parent)
         errors += e2
         warnings += w2
     if not errors and not a.no_base:
@@ -331,7 +517,7 @@ def main():
             warnings.append(bnote)
         elif base:
             errors += weakened(doc, base)
-    rep = report(doc) if not errors else None
+    rep = report(doc, a.today) if not errors else None
 
     if a.json:
         print(json.dumps({"errors": errors, "warnings": warnings, "report": rep}, indent=2))
@@ -352,7 +538,8 @@ def main():
         return 1
     if rep["failed"]:
         return 2
-    blocked = rep["blocked_unchecked"] or rep["blocked_unmeasurable"] or rep["blocked_out_of_scope"]
+    blocked = (rep["blocked_unchecked"] or rep["blocked_unmeasurable"] or rep["blocked_out_of_scope"]
+               or rep["blocked_parameters"])
     if blocked and not a.allow_unknown:
         return 3
     return 0

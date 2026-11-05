@@ -45,7 +45,9 @@ def ev(result, extra=""):
     return f"    evidence: {{result: {result}, ref: r, date: 2026-11-04{extra}}}\n"
 
 
-class CheckerTest(unittest.TestCase):
+class CheckerCase(unittest.TestCase):
+    """Helpers shared by the checker test classes; has no tests of its own."""
+
     def setUp(self):
         self._tmp = tempfile.TemporaryDirectory()
         self.dir = Path(self._tmp.name)
@@ -72,6 +74,8 @@ class CheckerTest(unittest.TestCase):
         self.git("add", path.name)
         self.git("commit", "-qm", "base")
 
+
+class CheckerTest(CheckerCase):
     # --- exit codes -------------------------------------------------------
     def test_example_passes(self):
         code, out = self.run_check(EXAMPLE, "--no-base")

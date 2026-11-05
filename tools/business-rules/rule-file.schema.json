@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Zou business-rule file",
-  "description": "Shape only. Cross-field rules and the coverage report are in check_rules.py.",
+  "description": "Shape only. Cross-field rules and the coverage report are in check_rules.py. Rules, assumptions, parameters and datasets are the single source of truth: code and tests read values from here instead of restating them.",
   "type": "object",
   "required": [
     "app",
@@ -25,6 +25,24 @@
       "type": "array",
       "items": {
         "$ref": "#/$defs/rule"
+      }
+    },
+    "assumptions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/assumption"
+      }
+    },
+    "parameters": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/parameter"
+      }
+    },
+    "datasets": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/dataset"
       }
     }
   },
@@ -201,6 +219,31 @@
           "type": "integer",
           "minimum": 1,
           "description": "Bump on every re-decision of a confirmed rule (including several on one day). Missing counts as 1."
+        },
+        "uses": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Ids this rule relies on. Write the rule's numbers as parameters, not literals in the statement.",
+          "properties": {
+            "parameters": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "assumptions": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "datasets": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
         }
       }
     },
@@ -235,6 +278,296 @@
         },
         "then": {
           "type": "string"
+        }
+      }
+    },
+    "assumption": {
+      "type": "object",
+      "required": [
+        "id",
+        "statement",
+        "status"
+      ],
+      "additionalProperties": false,
+      "description": "A condition the rules and measurements hold under: workload, environment, scope, an external fact.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9_-]*$"
+        },
+        "statement": {
+          "type": "string",
+          "minLength": 1
+        },
+        "kind": {
+          "enum": [
+            "workload",
+            "environment",
+            "scope",
+            "external",
+            "data"
+          ]
+        },
+        "status": {
+          "enum": [
+            "confirmed",
+            "proposed",
+            "open"
+          ]
+        },
+        "source": {
+          "type": "object",
+          "required": [
+            "kind"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "enum": [
+                "stakeholder",
+                "document",
+                "code",
+                "incident",
+                "measurement",
+                "inferred"
+              ]
+            },
+            "ref": {
+              "type": "string"
+            }
+          }
+        },
+        "owner": {
+          "type": "string"
+        },
+        "decided_by": {
+          "type": "string"
+        },
+        "decided_on": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "valid_until": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+          "description": "After this date the assumption is expired and must be re-confirmed."
+        }
+      }
+    },
+    "parameter": {
+      "type": "object",
+      "required": [
+        "id",
+        "status",
+        "origin",
+        "mutability"
+      ],
+      "additionalProperties": false,
+      "description": "A named number or setting that rules and code read instead of hard-coding it.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9_-]*$"
+        },
+        "description": {
+          "type": "string"
+        },
+        "value": {
+          "type": [
+            "number",
+            "string",
+            "boolean",
+            "null"
+          ],
+          "description": "null = not set yet."
+        },
+        "unit": {
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "confirmed",
+            "proposed",
+            "open"
+          ]
+        },
+        "origin": {
+          "enum": [
+            "decided",
+            "measured",
+            "estimated"
+          ],
+          "description": "decided = a person chose it; measured = taken from a measurement; estimated = a prediction or guess."
+        },
+        "mutability": {
+          "enum": [
+            "build",
+            "runtime"
+          ],
+          "description": "build = fixed when the app is built or tested; runtime = may be changed while the app runs."
+        },
+        "changeable_by": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "business_owner",
+              "developer",
+              "measurement"
+            ]
+          },
+          "description": "Who may change the value without a new decision on the parameter."
+        },
+        "bounds": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "min": {
+              "type": "number"
+            },
+            "max": {
+              "type": "number"
+            }
+          },
+          "description": "Allowed range for a numeric value. Applies to every change, including runtime ones."
+        },
+        "source": {
+          "type": "object",
+          "required": [
+            "kind"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "enum": [
+                "stakeholder",
+                "document",
+                "code",
+                "incident",
+                "measurement",
+                "inferred"
+              ]
+            },
+            "ref": {
+              "type": "string"
+            }
+          }
+        },
+        "decided_by": {
+          "type": "string"
+        },
+        "decided_on": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "measurement": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Context of a measured or estimated value.",
+          "properties": {
+            "date": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            },
+            "workload": {
+              "type": "string",
+              "description": "Id of the assumption describing the workload."
+            },
+            "environment": {
+              "type": "string"
+            },
+            "tool": {
+              "type": "string"
+            },
+            "period": {
+              "type": "string"
+            },
+            "sample_size": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        },
+        "assumptions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Ids of assumptions this value holds under."
+        },
+        "review_by": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+          "description": "Date by which the value should be re-checked."
+        }
+      }
+    },
+    "dataset": {
+      "type": "object",
+      "required": [
+        "id",
+        "version",
+        "mutability"
+      ],
+      "additionalProperties": false,
+      "description": "Static reference data (tables, catalogues) tracked by version instead of copied into code.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9_-]*$"
+        },
+        "description": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string",
+          "description": "File, relative to this rules file."
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "mutability": {
+          "enum": [
+            "build",
+            "runtime"
+          ]
+        },
+        "owner": {
+          "type": "string"
+        },
+        "source": {
+          "type": "object",
+          "required": [
+            "kind"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "enum": [
+                "stakeholder",
+                "document",
+                "code",
+                "incident",
+                "measurement",
+                "inferred"
+              ]
+            },
+            "ref": {
+              "type": "string"
+            }
+          }
+        },
+        "review_by": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
         }
       }
     }

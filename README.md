@@ -10,5 +10,5 @@
 
 ## Tools
 
-- [`tools/business-rules/`](tools/business-rules/check_rules.py): the checker, schema, example and tests. Plain Python, no Claude needed.
+- [`tools/business-rules/`](tools/business-rules/check_rules.py): the checker, parameter exporter, schema, example and tests. Plain Python, no Claude needed.
 - [`business-rules` Claude skill](.claude/skills/business-rules/SKILL.md): optional helper for drawing rules out. Install it for every project with `tools/install-skill.sh`.
