@@ -1,6 +1,6 @@
 ---
 name: business-rules
-description: Draw out, record, and check an app's business rules in a rules file that separates confirmed decisions from inferred assumptions and open questions. Use when the user wants to specify, audit, or extract business rules for any app (idea, partly specified, or partly built), or asks what is confirmed, checked, or unknown.
+description: Draw out, record, and check an app's business rules in a rules file that separates confirmed decisions from inferred assumptions and open questions, and keeps the rules' numbers (limits, thresholds, budgets, measurements), assumptions, and reference data in that one file instead of in code. Use when the user wants to specify, audit, or extract business rules for any app (idea, partly specified, or partly built), asks where a number or config value should live, or asks what is confirmed, checked, or unknown.
 ---
 
 # Business rules
@@ -25,9 +25,9 @@ The checker, schema, example and tests live in the zou repo at `tools/business-r
 
 ## Pick the entry point from the app's state
 
-- **Idea only (discovery):** ask about one bounded workflow at a time. Walk the prompts: what happens before, during, and after; missing, invalid, outdated, or contradictory data; overlapping, late, or repeated actions; dependency failure or interruption; who may act or see the data; how an unfinished or wrong outcome is found and recovered. Offer business alternatives in everyday language. Write each answer as a `proposed` rule and ask the user to confirm, change, or reject it.
-- **Partly specified (audit):** read the spec and look for contradictions, ambiguities, missing rules, and assumptions presented as decisions. Turn each into a rule record or an `open` question, and ask the user.
-- **Partly built (extraction):** read the code and list the rules it actually implements, each as `proposed` with `source.kind: code` and a file reference. Ask the user whether each is intended or accidental. Then look for rules the code never implements (unchecked inputs, missing authorization, no failure handling) and add them as `open`.
+- **Idea only (discovery):** ask about one bounded workflow at a time. Walk the prompts: what happens before, during, and after; missing, invalid, outdated, or contradictory data; overlapping, late, or repeated actions; dependency failure or interruption; who may act or see the data; how an unfinished or wrong outcome is found and recovered. Offer business alternatives in everyday language. Write each answer as a `proposed` rule and ask the user to confirm, change, or reject it. For every number a rule needs, also ask who decides it, whether it can change while the app runs, and what it assumes (load, environment, scope); record those as parameters and assumptions.
+- **Partly specified (audit):** read the spec and look for contradictions, ambiguities, missing rules, and assumptions presented as decisions. Turn each into a rule record or an `open` question, and ask the user. Move numbers written inside statements into parameters.
+- **Partly built (extraction):** read the code and list the rules it actually implements, each as `proposed` with `source.kind: code` and a file reference. Ask the user whether each is intended or accidental. List the numbers hard-coded in the source as `proposed` parameters with `source.kind: code`; ask whether each should be fixed at build time or changeable at runtime, and by whom. Then look for rules the code never implements (unchecked inputs, missing authorization, no failure handling) and add them as `open`.
 
 Ask in small batches, not a long questionnaire. Record the answer and its date before moving on.
 
