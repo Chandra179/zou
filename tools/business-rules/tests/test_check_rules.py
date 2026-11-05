@@ -12,7 +12,7 @@ from pathlib import Path
 
 SKILL = Path(__file__).resolve().parent.parent
 SCRIPT = SKILL / "check_rules.py"
-EXAMPLE = SKILL / "templates" / "rules.example.yaml"
+EXAMPLE = SKILL / "templates" / "rules.example.json"
 
 RULE = """\
   - id: {id}

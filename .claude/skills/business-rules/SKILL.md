@@ -5,7 +5,7 @@ description: Draw out, record, and check an app's business rules in a rules file
 
 # Business rules
 
-Goal: a rules file (`<app>.rules.yaml`, shape in `rule-file.schema.json`, example in `templates/rules.example.yaml`, both in the tools folder below) where every rule says who decided it, which scenarios define it, how it is checked, and what the evidence is. Unknown is never treated as satisfied.
+Goal: a rules file (`<app>.rules.json`, shape in `rule-file.schema.json`, example in `templates/rules.example.json`, both in the tools folder below) where every rule says who decided it, which scenarios define it, how it is checked, and what the evidence is. Unknown is never treated as satisfied.
 
 ## Where the tools are
 
@@ -40,7 +40,7 @@ Ask in small batches, not a long questionnaire. Record the answer and its date b
 
 Bump a rule's `revision` (and `decided_on`) only when the user re-decides it, never to get past the weakening check. If a rule's dependency (`depends_on`) failed, the checker downgrades the dependent rule's pass to unknown: report that, do not hide it.
 
-Exit codes: 0 acceptable within the evidenced scope, 1 structural errors, 2 a confirmed rule failed, 3 blocked (a confirmed required rule is unknown, unmeasurable, out of scope, or uses an unsettled parameter). Use `--allow-unknown` while work is in progress. By default the checker compares with `HEAD` (when the file is in git) and errors when a confirmed rule's statement, scenarios, check, or `required` changed without a newer `decided_on` or higher `revision`; `--base <git-ref>` picks another base and `--no-base` turns it off. The script needs PyYAML and jsonschema (`--skip-shape` skips the shape checks).
+Exit codes: 0 acceptable within the evidenced scope, 1 structural errors, 2 a confirmed rule failed, 3 blocked (a confirmed required rule is unknown, unmeasurable, out of scope, or uses an unsettled parameter). Use `--allow-unknown` while work is in progress. By default the checker compares with `HEAD` (when the file is in git) and errors when a confirmed rule's statement, scenarios, check, or `required` changed without a newer `decided_on` or higher `revision`; `--base <git-ref>` picks another base and `--no-base` turns it off. The script needs jsonschema (`--skip-shape` skips the shape checks); PyYAML only if the rules file is YAML. Write rules files as JSON.
 
 ## Limits to tell the user
 

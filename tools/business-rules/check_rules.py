@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Check a Zou business-rule file and print an evidence report.
 
-Usage: check_rules.py RULES.yaml [--allow-unknown] [--base GIT_REF | --no-base] [--skip-shape] [--json]
+Usage: check_rules.py RULES.json [--allow-unknown] [--base GIT_REF | --no-base] [--skip-shape] [--json]
                       [--today YYYY-MM-DD]
 
 Exit codes:
@@ -13,8 +13,8 @@ Exit codes:
      (--allow-unknown reports the blockers but exits 0)
 
 This checks structure and recorded evidence only. It cannot tell whether a
-rule is the right rule: that is what `confirmed` records. Needs PyYAML and
-jsonschema (or --skip-shape). Compares against HEAD by default when the file is
+rule is the right rule: that is what `confirmed` records. Rules files are JSON
+(.yaml / .yml also work and need PyYAML). Needs jsonschema (or --skip-shape). Compares against HEAD by default when the file is
 in git; a weakened confirmed rule needs a newer decided_on or higher revision.
 """
 import argparse
@@ -26,19 +26,33 @@ from collections import Counter
 from pathlib import Path
 
 try:
-    import yaml
+    import yaml  # optional: only needed to read .yaml / .yml rules files
 except ImportError:
-    sys.exit("PyYAML is required: pip install pyyaml")
+    yaml = None
+
+if yaml is not None:
+    class _Loader(yaml.SafeLoader):
+        """Keep ISO dates as strings so they match the schema."""
+
+    _Loader.yaml_implicit_resolvers = {
+        k: [(t, r) for t, r in v if t != "tag:yaml.org,2002:timestamp"]
+        for k, v in yaml.SafeLoader.yaml_implicit_resolvers.items()
+    }
 
 
-class _Loader(yaml.SafeLoader):
-    """Keep ISO dates as strings so they match the schema."""
-
-
-_Loader.yaml_implicit_resolvers = {
-    k: [(t, r) for t, r in v if t != "tag:yaml.org,2002:timestamp"]
-    for k, v in yaml.SafeLoader.yaml_implicit_resolvers.items()
-}
+def parse(text, name):
+    """Parse a rules file: JSON by default; YAML when the name ends in .yaml or .yml."""
+    if str(name).lower().endswith((".yaml", ".yml")):
+        if yaml is None:
+            raise ValueError("PyYAML is required to read YAML files: pip install pyyaml")
+        try:
+            return yaml.load(text, Loader=_Loader)
+        except yaml.YAMLError as e:
+            raise ValueError(str(e))
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError as e:
+        raise ValueError(f"invalid JSON: {e}")
 
 SCHEMA = Path(__file__).resolve().parent / "rule-file.schema.json"
 UNSETTLED = ("unknown", "unmeasurable", "out_of_scope")
@@ -405,7 +419,7 @@ def load_base(path, ref):
         rel = path.resolve().relative_to(Path(top).resolve()).as_posix()
         out = subprocess.run(["git", "show", f"{ref}:{rel}"], cwd=top, capture_output=True,
                              text=True, check=True).stdout
-        doc = yaml.load(out, Loader=_Loader)
+        doc = parse(out, rel)
         return doc if isinstance(doc, dict) else None, None
     except (subprocess.CalledProcessError, FileNotFoundError, ValueError) as e:
         return None, f"--base {ref}: could not read the file at that ref ({e.__class__.__name__}); weakening check skipped"
@@ -488,12 +502,12 @@ def main():
 
     path = Path(a.file)
     try:
-        doc = yaml.load(path.read_text(), Loader=_Loader)
-    except (OSError, yaml.YAMLError) as e:
+        doc = parse(path.read_text(), path.name)
+    except (OSError, ValueError) as e:
         print(f"cannot read {a.file}: {e}", file=sys.stderr)
         return 1
     if not isinstance(doc, dict):
-        print("file must be a YAML mapping with 'app' and 'rules'", file=sys.stderr)
+        print("file must be a JSON object with 'app' and 'rules'", file=sys.stderr)
         return 1
 
     errors, warnings = [], []

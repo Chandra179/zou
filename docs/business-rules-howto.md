@@ -20,7 +20,7 @@ Write every rule as a record that answers: who decided it, which concrete cases 
 | `evidence` | `result` (passed, failed, unknown, unmeasurable, out_of_scope), a `ref` to the result, `date`, `limitations`, and `provenance` (code version, rule revision, environment, workload, tool, period). |
 | `depends_on` | Other rule ids this rule relies on. If one of them fails, this rule's pass counts as unknown. |
 
-See [`rules.example.yaml`](../tools/business-rules/templates/rules.example.yaml).
+Rules files are JSON (`<app>.rules.json`), checked against [`rule-file.schema.json`](../tools/business-rules/rule-file.schema.json). JSON has no comments, so use `rationale` and `description` fields for explanations. `.yaml` and `.yml` files are still read if you prefer them (this needs PyYAML). See [`rules.example.json`](../tools/business-rules/templates/rules.example.json).
 
 ## Workflow
 
@@ -31,10 +31,10 @@ See [`rules.example.yaml`](../tools/business-rules/templates/rules.example.yaml)
 5. **Run the checker** and work through the gaps it lists.
 
 ```
-python3 tools/business-rules/check_rules.py my-app.rules.yaml
+python3 tools/business-rules/check_rules.py my-app.rules.json
 ```
 
-Needs PyYAML and jsonschema (`pip install pyyaml jsonschema`). Without jsonschema the checker stops with an error unless you pass `--skip-shape`.
+Needs jsonschema (`pip install jsonschema`), plus PyYAML only for YAML files. Without jsonschema the checker stops with an error unless you pass `--skip-shape`.
 
 Exit codes: 0 acceptable within the evidenced scope, 1 structural errors, 2 a confirmed rule failed, 3 blocked (a confirmed required rule is unknown, unmeasurable, out of scope, or uses a parameter that is not confirmed or has no value). `--allow-unknown` reports blockers but exits 0, for work in progress.
 
@@ -67,8 +67,8 @@ What the checker adds:
 Code reads the values with the exporter, which validates the file first and refuses unconfirmed parameters:
 
 ```
-python3 tools/business-rules/export_params.py my-app.rules.yaml --mutability build --format env
-python3 tools/business-rules/export_params.py my-app.rules.yaml --mutability runtime   # json, with bounds
+python3 tools/business-rules/export_params.py my-app.rules.json --mutability build --format env
+python3 tools/business-rules/export_params.py my-app.rules.json --mutability runtime   # json, with bounds
 ```
 
 Use `build` output for generated constants or deploy variables, and `runtime` output for a loader that reloads while the app runs. The runtime loader should reject values outside `bounds`. The checker cannot see a number hard-coded in source; a code review or a test that loads the exported value (and fails if the file and the code disagree) covers that gap.

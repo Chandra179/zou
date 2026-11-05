@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Export parameters from a Zou rules file so code reads them instead of restating them.
 
-Usage: export_params.py RULES.yaml [--mutability build|runtime] [--format json|flat|env]
+Usage: export_params.py RULES.json [--mutability build|runtime] [--format json|flat|env]
                                    [--include-unsettled] [--skip-shape]
 
 Formats:
@@ -39,12 +39,12 @@ def main():
 
     path = Path(a.file)
     try:
-        doc = cr.yaml.load(path.read_text(), Loader=cr._Loader)
-    except (OSError, cr.yaml.YAMLError) as e:
+        doc = cr.parse(path.read_text(), path.name)
+    except (OSError, ValueError) as e:
         print(f"cannot read {a.file}: {e}", file=sys.stderr)
         return 1
     if not isinstance(doc, dict):
-        print("file must be a YAML mapping", file=sys.stderr)
+        print("file must be a JSON object", file=sys.stderr)
         return 1
 
     errors = []

@@ -265,5 +265,52 @@ class ExportTest(base.CheckerCase):
         self.assertIn("Nothing exported", err)
 
 
+class JsonFormatTest(base.CheckerCase):
+    def as_json(self, text):
+        sys.path.insert(0, str(SKILL))
+        import check_rules
+        return json.dumps(check_rules.parse(text, "x.yaml"), indent=2)
+
+    def test_json_rules_file_is_checked_without_pyyaml(self):
+        stub = self.dir / "stub"
+        stub.mkdir()
+        (stub / "yaml.py").write_text("raise ImportError('hidden for test')\n")
+        p = self.write(self.as_json(data_doc(parameters=[param()],
+                                             rules=[uses(rule(evidence=ev("passed")), parameters="P")])), "r.json")
+        code, out = self.run_check(p, "--no-base", env={"PYTHONPATH": str(stub)})
+        self.assertEqual(code, 0, out)
+
+    def test_yaml_file_still_works_and_needs_pyyaml(self):
+        stub = self.dir / "stub"
+        stub.mkdir()
+        (stub / "yaml.py").write_text("raise ImportError('hidden for test')\n")
+        p = self.write(data_doc(parameters=[param()]), "r.yaml")
+        self.assertEqual(self.run_check(p, "--no-base", "--allow-unknown")[0], 0)
+        code, out = self.run_check(p, "--no-base", env={"PYTHONPATH": str(stub)})
+        self.assertEqual(code, 1)
+        self.assertIn("PyYAML is required", out)
+
+    def test_invalid_json_is_a_clear_error(self):
+        p = self.write('{"app": "t", "rules": [', "r.json")
+        code, out = self.run_check(p, "--no-base")
+        self.assertEqual(code, 1)
+        self.assertIn("invalid JSON", out)
+
+    def test_weakening_guard_reads_the_json_base(self):
+        text = self.as_json(data_doc(parameters=[param(value="100")]))
+        p = self.write(text, "r.json")
+        self.init_repo(p)
+        p.write_text(text.replace('"value": 100', '"value": 500'))
+        code, out = self.run_check(p, "--allow-unknown")
+        self.assertEqual(code, 1)
+        self.assertIn("P: changed value since base", out)
+
+    def test_export_reads_json(self):
+        p = self.write(self.as_json(data_doc(parameters=[param(id="P-a", value="7")])), "r.json")
+        r = subprocess.run([sys.executable, "-W", "ignore", str(EXPORT), str(p), "--format", "flat"],
+                           capture_output=True, text=True, cwd=self.dir)
+        self.assertEqual(json.loads(r.stdout), {"P-a": 7}, r.stderr)
+
+
 if __name__ == "__main__":
     unittest.main()
