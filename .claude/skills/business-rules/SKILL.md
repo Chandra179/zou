@@ -5,7 +5,7 @@ description: Draw out, record, and check an app's business rules in a rules file
 
 # Business rules
 
-Goal: a rules file (`<app>.rules.json`, shape in `rule-file.schema.json`, example in `templates/rules.example.json`, both in the tools folder below) where every rule says who decided it, which scenarios define it, how it is checked, and what the evidence is. Unknown is never treated as satisfied.
+Goal: a focused business-rules file (`<app>.rules.json`, shape in `rule-file.schema.json`, example in `templates/rules.example.json`, both in the tools folder below) where every rule says who decided it, which scenarios define it, how it is checked, and what the evidence is. Unknown is never treated as satisfied. This Claude skill supports the business-rules tool; it does not implement Zou's broader evaluation model.
 
 ## Where the tools are
 
@@ -15,7 +15,7 @@ The checker, schema, example and tests live in the zou repo at `tools/business-r
 
 1. **Never mark a rule `confirmed` yourself.** Only the user (or a named decision maker they cite) confirms. What you infer is `proposed` with `source.kind: inferred`. Unresolved questions are `open`.
 2. **Never weaken a confirmed rule, scenario, or check to make evidence pass.** A change to a confirmed rule needs the user's decision and a new `decided_on`.
-3. **Every rule needs a required and a forbidden scenario.** Forbidden cases expose rules that are too permissive.
+3. **Every confirmed rule needs a `kind: required` and a `kind: forbidden` scenario.** Here `kind: required` describes a positive scenario that must work; it is distinct from the rule-level `required` boolean, which says whether unevidenced evidence blocks acceptance. Forbidden cases expose rules that are too permissive.
 4. **Evidence comes from the check, not from your judgment.** Record `passed` or `failed` only with a real `check.method` and a `ref` to the result, plus provenance (code version, environment, workload, tool). State `check.strength` honestly: `exhaustive`, `bounded`, `sampled`, or `human`. A sampled pass is a pass within that sample only.
 5. **Separate `unknown` from `unmeasurable`.** `unknown` means not checked yet. `unmeasurable` means no available check can decide the rule; record a `reason`. Never call such a rule satisfied. Resolve it by adding checkable proxy rules (`proxies`), a human review check (`method: review`, `strength: human`), or by asking the decision maker to revise the rule or mark it `required: false`.
 6. **Mark each confirmed rule `required` true or false.** Required means an outcome, invariant, or hard constraint that blocks acceptance while unevidenced. Ask the user; do not guess.

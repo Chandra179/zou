@@ -76,9 +76,11 @@ Authorization, transactional consistency, idempotency, and business rules. These
 
 All three can fit into the same constraint registry, but their verification engines should differ.
 
-### 4. Scoping the first prototype
+### 4. Proposed scope for a future prototype
 
-Initial scope: infrastructure constraints and operation constraints.
+The proposed initial prototype scope is infrastructure and operation constraints.
+This is a future design direction, not the scope of the current business-rules
+checker described at the top of this document.
 
 Start with a single backend operation, such as `POST /orders`, and trace its dependencies:
 
@@ -88,7 +90,10 @@ For each operation, define its resource demands, behavioral invariants, environm
 
 Then let an AI agent implement it and run the verifiers.
 
-The first prototype doesn't need to understand an entire application. It only needs to demonstrate that a measurable specification can guide implementation, detect violations, and support automated correction.
+The proposed prototype doesn't need to understand an entire application. It only
+needs to demonstrate that a measurable specification can guide implementation,
+detect violations, and support automated correction. This capability is not yet
+implemented in this repository.
 
 ### 5. The most important design principle
 

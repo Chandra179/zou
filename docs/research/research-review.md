@@ -2,7 +2,7 @@
 
 Reading date: 3 November 2026. Related proposal: [measurement-driven-development.md](../measurement-driven-development.md).
 
-Companion documents: [related books and reading order](books.md) and [the conceptual evaluation pattern](../../evaluation-pattern.yaml).
+Companion documents: [related books and reading order](books.md) and the [evaluation model](../../evaluation-model.yaml).
 
 This review covers the six research entries discussed in chat, the two older foundations, and the additional CEGIS reference. It distinguishes reported findings from proposed applications to Zou. The reading used accessible full-text bodies, methodological details, results, limitations, and relevant appendices. Experiments and implementations were not independently reproduced. PDF figure rendering was unavailable; figure-related interpretations rely on captions and surrounding text. For Palladio, the full text read was its official 28-page introduction chapter, rather than the separately mentioned 2009 journal article. SACM is a specification, not an empirical research paper. The recent arXiv papers are assessed as the particular preprint versions linked below.
 

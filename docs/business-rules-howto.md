@@ -1,6 +1,6 @@
 # Business rules: file format and how-to
 
-Applies the [evaluation pattern](../evaluation-pattern.yaml) to one problem: getting an app's business rules specified correctly. The format and [checker](../tools/business-rules/check_rules.py) are plain Python and need no Claude. The optional [Claude skill](../.claude/skills/business-rules/SKILL.md) helps draw rules out.
+Applies the [evaluation model](../evaluation-model.yaml) to one focused problem: specifying and checking an app's behavioral business rules. The format and [checker](../tools/business-rules/check_rules.py) are plain Python and need no Claude. The optional, Claude-installed [business-rules skill](../.claude/skills/business-rules/SKILL.md) helps draw rules out. This tool does not yet implement the broader design, resource, implementation, or runtime evaluation capabilities described by the model.
 
 ## The idea
 
@@ -13,9 +13,9 @@ Write every rule as a record that answers: who decided it, which concrete cases 
 | `id`, `statement` | Stable name and the rule in plain language (EARS wording is optional). |
 | `status` | `confirmed`: a decision maker decided it. `proposed`: inferred, awaiting a decision. `open`: an unresolved question. |
 | `revision` | Integer, starting at 1. Bump it each time a decision maker re-decides a confirmed rule, including several times on one day. |
-| `required` | `true` for an outcome, invariant, or hard constraint that blocks acceptance while unevidenced. Mandatory on confirmed rules. |
+| `required` | Rule-level acceptance gate: `true` when this outcome, invariant, or hard constraint blocks acceptance while unevidenced; `false` when it does not. Mandatory on confirmed rules. This is distinct from a scenario's `kind: required`, which means that scenario must work. |
 | `source`, `decided_by`, `decided_on` | Where it came from and who decided it. Required for `confirmed`; the source cannot be `inferred`. |
-| `scenarios` | Concrete given / when / then cases, each `required`, `forbidden`, or `exceptional`. A confirmed rule needs at least one required and one forbidden scenario. |
+| `scenarios` | Concrete given / when / then cases, each `kind` `required`, `forbidden`, or `exceptional`. Here `required` means a positive scenario that must work; it does not set the rule-level acceptance gate. A confirmed rule needs at least one required and one forbidden scenario. |
 | `check` | `method` (test, assertion, review, proof, measurement, none), optional `ref`, and `strength` (exhaustive, bounded, sampled, human). |
 | `evidence` | `result` (passed, failed, unknown, unmeasurable, out_of_scope), a `ref` to the result, `date`, `limitations`, and `provenance` (code version, rule revision, environment, workload, tool, period). |
 | `depends_on` | Other rule ids this rule relies on. If one of them fails, this rule's pass counts as unknown. |

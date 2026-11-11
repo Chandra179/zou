@@ -2,7 +2,7 @@
 
 Documented: 3 November 2026.
 
-These books support the concepts in [measurement-driven-development.md](../measurement-driven-development.md), the [research review](research-review.md), and the [evaluation pattern](../../evaluation-pattern.yaml).
+These books support the concepts in [measurement-driven-development.md](../measurement-driven-development.md), the [research review](research-review.md), and the [evaluation model](../../evaluation-model.yaml).
 
 **Reading status:** recommendations based on publisher or author descriptions, tables of contents, and selected accessible material. These notes do not claim a full reading of any book. The connections to Zou are our interpretation; they do not establish that a book demonstrates the complete proposed system.
 

@@ -213,7 +213,7 @@
         },
         "required": {
           "type": "boolean",
-          "description": "true = an outcome, invariant, or hard constraint that blocks acceptance while unevidenced. Mandatory on confirmed rules (checked by the script)."
+          "description": "Rule-level acceptance gate: true means this outcome, invariant, or hard constraint blocks acceptance while unevidenced; false means it does not. Distinct from scenario.kind = required, which marks a scenario that must work. Mandatory on confirmed rules (checked by the script)."
         },
         "revision": {
           "type": "integer",
